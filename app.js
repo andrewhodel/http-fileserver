@@ -19,6 +19,17 @@ var mimeTypes = {
 
 http.createServer(function(req, res) {
 	var uri = url.parse(req.url).pathname;
+
+	if (!req.headers.host) {
+		console.log(new Date().toString() + ' - got request with no req.headers.host', req);
+		res.writeHead(400, {
+			'Content-Type': 'text/plain'
+		});
+		res.write('error, no host header in request');
+		res.end();
+		return;
+	}
+
 	var host = req.headers.host;
 
 	if (req.headers.host.indexOf(':') > -1) {
@@ -56,7 +67,7 @@ http.createServer(function(req, res) {
 	fs.exists(filename, function(exists) {
 		if (!exists) {
 			console.log(new Date().toString() + ' - 404: ' + filename);
-			res.writeHead(200, {
+			res.writeHead(404, {
 				'Content-Type': 'text/plain'
 			});
 			res.write('404 Not Found\n');

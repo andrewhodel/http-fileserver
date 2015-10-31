@@ -62,7 +62,7 @@ http.createServer(function(req, res) {
 		filename += 'index.html';
 	}
 
-	console.log(new Date().toString() + ' - Request: ' + filename);
+	console.log(new Date().toString() + ' - ' + req.connection.remoteAddress + ' - Request: ' + filename);
 
 	fs.exists(filename, function(exists) {
 		if (!exists) {
@@ -74,6 +74,13 @@ http.createServer(function(req, res) {
 			res.end();
 			return;
 		}
+
+		if (fs.lstatSync(filename).isDirectory()) {
+			res.writeHead(302, {'Location':uri + '/'});
+			res.end();
+			return;
+		}
+
 		var mimeType = mimeTypes[path.extname(filename).split(".")[1]];
 		res.writeHead(200, mimeType);
 

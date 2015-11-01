@@ -32,7 +32,11 @@ http.createServer(function(req, res) {
 
 	var host = req.headers.host;
 
-	if (req.headers.host.indexOf(':') > -1) {
+	if (host.substr(0,4) == 'www.') {
+		host = host.substr(4);
+	}
+
+	if (host.indexOf(':') > -1) {
 		// remove port from host to find vhost directory
 		host = req.headers.host.slice(0,req.headers.host.indexOf(':'));
 	}

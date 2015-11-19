@@ -86,7 +86,7 @@ http.createServer(function(req, res) {
 		}
 
 		var mimeType = mimeTypes[path.extname(filename).split(".")[1]];
-		res.writeHead(200, mimeType);
+		res.writeHead(200, {'Content-Type':mimeType});
 
 		var fileStream = fs.createReadStream(filename);
 		fileStream.pipe(res);

@@ -4,8 +4,8 @@ var http = require('http'),
 	fs = require('fs');
 
 var config = {
-	port: 80,
-	root: '/home/www'
+	port: 8989,
+	root: '/root/www'
 };
 
 var mimeTypes = {
@@ -69,6 +69,10 @@ http.createServer(function(req, res) {
 	console.log(new Date().toString() + ' - ' + req.connection.remoteAddress + ' - Request: ' + filename);
 
 	fs.exists(filename, function(exists) {
+
+		// error status
+		var error = false;
+
 		if (!exists) {
 			console.log(new Date().toString() + ' - 404: ' + filename);
 			res.writeHead(404, {
@@ -85,11 +89,81 @@ http.createServer(function(req, res) {
 			return;
 		}
 
+		res.statusCode = 200;
 		var mimeType = mimeTypes[path.extname(filename).split(".")[1]];
-		res.writeHead(200, {'Content-Type':mimeType});
 
-		var fileStream = fs.createReadStream(filename);
-		fileStream.pipe(res);
+		if (typeof(mimeType) != 'undefined') {
+			res.setHeader('Content-Type', mimeType);
+		}
+
+		// this is the file size in bytes
+		var fileSize = fs.statSync(filename).size;
+
+		// check for range header on request
+		// range: 'bytes=35756527-'
+		if (typeof(req.headers.range) != 'undefined') {
+			// this is a range request, meaning the file is already partially downloaded
+			console.log('range request at', req.headers.range);
+
+			// we will need to respond with a 206 Partial Content
+			res.statusCode = 206;
+
+			if (req.headers.range.indexOf('bytes') != 0) {
+				// they aren't requesting bytes, just drop it
+				error = 'range not requested in bytes, there is no reason to support your request';
+			}
+
+			// a range request should be in one of two forms
+			// bytes=NNNN- means start at byte NNNN and send until the end of the file
+			// bytes=NNNN-NNNNN means start at byte NNNN and send until NNNNN
+			//
+			// there is also multipart ranges which would be something like
+			// bytes=0-50, 100-150
+			// and the idea is that you send back a Content-Type: multipart/byteranges; boundary=234328kdjsdf
+			// where the boundary defines each breakpoint, it is kind of strange to have a boundary because why wouldn't
+			// the client just count it so we just won't support it because it seems off
+			if (req.headers.range.indexOf(',') > -1) {
+				error = 'server does not support multipart ranges';
+			}
+
+			// so get the byte range
+			var r1 = Number(req.headers.range.split('=')[1].split('-')[0]);
+			var r2 = Number(req.headers.range.split('=')[1].split('-')[1]);
+			if (r2 == '') {
+				r2 = fileSize;
+			}
+
+			// set headers for support range requests
+			res.setHeader('Content-Range', 'bytes '+r1+'-'+r2+'/'+fileSize);
+			// and content length
+			res.setHeader('Content-Length', r2-r1);
+
+		} else {
+
+			// set headers for support range requests
+			res.setHeader('Accept-Ranges', 'bytes');
+			// and content length
+			res.setHeader('Content-Length', fileSize);
+
+		}
+
+		if (error != false) {
+			console.log('500 ERROR ', error);
+			res.statusCode = 500;
+			res.end(error);
+		} else {
+
+			if (typeof(req.headers.range) != 'undefined') {
+				// is a range request
+				var fileStream = fs.createReadStream(filename, {start:r1, end:r2});
+			} else {
+				// not a range request
+				var fileStream = fs.createReadStream(filename);
+			}
+			//console.log('sending file');
+			fileStream.pipe(res);
+
+		}
 
 	});
 }).listen(config.port);

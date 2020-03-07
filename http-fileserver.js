@@ -74,7 +74,7 @@ http.createServer(function(req, res) {
 		var error = false;
 
 		if (!exists) {
-			console.log(new Date().toString() + ' - 404: ' + filename);
+			console.log(new Date().toString() + ' - 404: ' + this.filename);
 			res.writeHead(404, {
 				'Content-Type': 'text/plain'
 			});
@@ -83,21 +83,21 @@ http.createServer(function(req, res) {
 			return;
 		}
 
-		if (fs.lstatSync(filename).isDirectory()) {
+		if (fs.lstatSync(this.filename).isDirectory()) {
 			res.writeHead(302, {'Location':uri + '/'});
 			res.end();
 			return;
 		}
 
 		res.statusCode = 200;
-		var mimeType = mimeTypes[path.extname(filename).split(".")[1]];
+		var mimeType = mimeTypes[path.extname(this.filename).split(".")[1]];
 
 		if (typeof(mimeType) != 'undefined') {
 			res.setHeader('Content-Type', mimeType);
 		}
 
 		// this is the file size in bytes
-		var fileSize = fs.statSync(filename).size;
+		var fileSize = fs.statSync(this.filename).size;
 
 		// check for range header on request
 		// range: 'bytes=35756527-'
@@ -155,17 +155,17 @@ http.createServer(function(req, res) {
 
 			if (typeof(req.headers.range) != 'undefined') {
 				// is a range request
-				var fileStream = fs.createReadStream(filename, {start:r1, end:r2});
+				var fileStream = fs.createReadStream(this.filename, {start:r1, end:r2});
 			} else {
 				// not a range request
-				var fileStream = fs.createReadStream(filename);
+				var fileStream = fs.createReadStream(this.filename);
 			}
 			//console.log('sending file');
 			fileStream.pipe(res);
 
 		}
 
-	});
+	}.bind({filename: filename}));
 }).listen(config.port);
 
 console.log('listening on port ' + config.port);

@@ -1,11 +1,18 @@
 var http = require('http'),
-	url = require('url'),
-	path = require('path'),
-	fs = require('fs');
+url = require('url'),
+path = require('path'),
+https = require('https'),
+fs = require('fs');
 
 var config = {
-	port: 8989,
-	root: '/root/www'
+	port: 80,
+	SSLport: 443,
+	SSLcert: '/home/ec2-user/keys/andrewhodel_com.crt',
+	SSLkey: '/home/ec2-user/keys/andrewhodel_com.key',
+	SSLca: '/home/ec2-user/keys/andrewhodel_com.ca-bundle',
+	root: '/home/ec2-user/andrewhodel.com',
+	// 301 redirect http requests to https
+	http_to_https: true
 };
 
 var mimeTypes = {
@@ -17,7 +24,7 @@ var mimeTypes = {
 	"css": "text/css"
 };
 
-http.createServer(function(req, res) {
+var c_srv = function(req, res) {
 	var uri = url.parse(req.url).pathname;
 
 	if (!req.headers.host) {
@@ -31,6 +38,7 @@ http.createServer(function(req, res) {
 	}
 
 	var host = req.headers.host;
+	host = '';
 
 	if (host.substr(0,4) == 'www.') {
 		host = host.substr(4);
@@ -57,6 +65,7 @@ http.createServer(function(req, res) {
 			startPoint = c+3;
 		}
 	}
+
 	// add everything from startPoint to the end of filename
 	newlpath = newlpath + filename.substring(startPoint);
 	// set filename to newlpath
@@ -166,6 +175,43 @@ http.createServer(function(req, res) {
 		}
 
 	}.bind({filename: filename}));
-}).listen(config.port);
+}
 
-console.log('listening on port ' + config.port);
+if (config.port != null) {
+	if (config.http_to_https) {
+		http.createServer(function(req, res) {
+			if (typeof(req.headers.host) == 'undefined') {
+				res.writeHead(404, {});
+			} else {
+				res.writeHead(301, {'Location': 'https://' + req.headers.host});
+			}
+			res.end();
+		}).listen(config.port);
+	} else {
+		http.createServer(c_srv).listen(config.port);
+	}
+	console.log('listening on port ' + config.port);
+}
+
+if (config.SSLport != null && config.SSLcert != null) {
+
+	if (fs.existsSync(config.SSLkey)) {
+		config.SSLkey = fs.readFileSync(config.SSLkey);
+	}
+	if (fs.existsSync(config.SSLcert)) {
+		config.SSLcert = fs.readFileSync(config.SSLcert);
+	}
+	if (fs.existsSync(config.SSLca)) {
+		config.SSLca = fs.readFileSync(config.SSLca);
+	}
+
+	var opts = {};
+	opts.key = config.SSLkey;
+	opts.cert = config.SSLcert;
+	opts.ca = config.SSLca;
+
+	https.createServer(opts, c_srv).listen(config.SSLport);
+	console.log('listening on port ' + config.SSLport);
+
+}
+

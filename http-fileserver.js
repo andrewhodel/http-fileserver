@@ -26,7 +26,7 @@ var mimeTypes = {
 
 var c_srv = function(req, res) {
 
-	if (req.url.indexOf('/..') > -1) {
+	if (req.url.indexOf('/..') || req.url.indexOf('../')) {
 		// don't allow this
 		res.writeHead(302, {'Location': '/'});
 		res.end();

@@ -28,7 +28,7 @@ var c_srv = function(req, res) {
 
 	var uri = url.parse(req.url).pathname;
 
-	if (uri.pathname.indexOf('../') != -1 || uri.pathname.indexOf('/..') != -1) {
+	if (uri.indexOf('../') != -1 || uri.indexOf('/..') != -1) {
 		// don't allow this
 		res.writeHead(302, {'Location': '/'});
 		res.end();

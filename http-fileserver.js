@@ -26,14 +26,14 @@ var mimeTypes = {
 
 var c_srv = function(req, res) {
 
-	if (req.url.indexOf('/..') || req.url.indexOf('../')) {
+	var uri = url.parse(req.url).pathname;
+
+	if (uri.pathname.indexOf('../') != -1 || uri.pathname.indexOf('/..') != -1) {
 		// don't allow this
 		res.writeHead(302, {'Location': '/'});
 		res.end();
 		return;
 	}
-
-	var uri = url.parse(req.url).pathname;
 
 	if (!req.headers.host) {
 		console.log(new Date().toString() + ' - got request with no req.headers.host', req);

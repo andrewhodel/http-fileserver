@@ -25,6 +25,14 @@ var mimeTypes = {
 };
 
 var c_srv = function(req, res) {
+
+	if (req.url.indexOf('/..') > -1) {
+		// don't allow this
+		res.writeHead(302, {'Location': '/'});
+		res.end();
+		return;
+	}
+
 	var uri = url.parse(req.url).pathname;
 
 	if (!req.headers.host) {

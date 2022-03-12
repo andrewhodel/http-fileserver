@@ -21,7 +21,9 @@ var mimeTypes = {
 	"jpg": "image/jpeg",
 	"png": "image/png",
 	"js": "text/javascript",
-	"css": "text/css"
+	"css": "text/css",
+	"mp4": "video/mp4",
+	"webm": "video/webm"
 };
 
 var c_srv = function(req, res) {
@@ -169,6 +171,9 @@ var c_srv = function(req, res) {
 			res.statusCode = 500;
 			res.end(error);
 		} else {
+
+			// this is required for chrome to load videos
+			res.writeHead(200);
 
 			if (typeof(req.headers.range) != 'undefined') {
 				// is a range request
